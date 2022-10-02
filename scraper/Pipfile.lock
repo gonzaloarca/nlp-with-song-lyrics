@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "da0f17c98e0e3b082a9dd57498b6759c3db188ee814a40fac0b829ebab713730"
+            "sha256": "42c9bce8ba66ede564b4e940e7c29a6ded0b2ff016a59704195950ad58bb542f"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -68,6 +68,14 @@
             ],
             "markers": "python_version >= '3.5'",
             "version": "==3.4"
+        },
+        "lyricsgenius": {
+            "hashes": [
+                "sha256:145df7d79e6b6ebe7ff6da9ed08c0cb43b251bb88f859339224b20e3f8399b05",
+                "sha256:83aef55ffca0b8ea69651c4b144693d1c012687a7da57f88d095b333f2e18928"
+            ],
+            "index": "pypi",
+            "version": "==3.0.1"
         },
         "numpy": {
             "hashes": [
