@@ -1,6 +1,6 @@
 import argparse
 
-from .chart_scraper.chart_scraper import scrape_chart_in_range
+from .charts_getter.charts_getter import get_chart_in_range
 
 
 def parse_args():
@@ -33,7 +33,7 @@ if __name__ == '__main__':
 
     validate_args(args)
 
-    charts = scrape_chart_in_range(
+    charts = get_chart_in_range(
         args.chart, args.start, args.end, args.periods, args.freq)
 
     charts.to_csv(args.output, index=False)
