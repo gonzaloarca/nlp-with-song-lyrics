@@ -46,7 +46,8 @@ def validate_args(args):
 
 def write_header(output):
     with open(output, 'w') as f:
-        f.write('artist,image,isNew,lastPos,peakPos,rank,title,weeks,date,lyrics,matched_title,matched_artist,timeout\n')
+        f.write(
+            'rank,title,artist,weeks,is_new,date,lyrics,matched_title,matched_artist,timeout\n')
 
 
 def get_data(charts, output, lyrics_cooldown, thread_id=0):
