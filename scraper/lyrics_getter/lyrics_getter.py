@@ -4,20 +4,24 @@ import lyricsgenius
 from ..utils import normalize_string
 from progress.bar import Bar
 
-genius = lyricsgenius.Genius(verbose=False)
+genius = lyricsgenius.Genius(verbose=False, remove_section_headers=True)
 genius.retries = 3
 
 
-def get_lyrics(artist: str, song: str):
+def get_lyrics_api_match(artist: str, song: str):
     # print(
     #     f'Getting lyrics for {artist} - {song} ({rank})')
 
-    song = genius.search_song(song, artist)
+    try:
+        song = genius.search_song(song, artist, get_full_info=False)
+    except:
+        print(f'Error getting lyrics for {artist} - {song}')
+        return '', '', '', True
 
     if song is None:
-        return ""
+        return '', '', '', False
 
-    return normalize_string(song.lyrics)
+    return normalize_string(song.lyrics), normalize_string(song.title), normalize_string(song.artist), False
 
 
 def get_lyrics_for_charts(chart: pd.DataFrame, cooldown: float, thread_id=0):
@@ -31,12 +35,22 @@ def get_lyrics_for_charts(chart: pd.DataFrame, cooldown: float, thread_id=0):
 
     for _, row in unique_songs.iterrows():
         artist = row['artist']
-        song = row['title']
+        title = row['title']
 
-        lyrics = get_lyrics(artist, song)
+        lyrics, matched_artist, matched_title, timeout = get_lyrics_api_match(
+            artist, title)
 
         chart_with_lyrics.loc[(chart_with_lyrics['artist'] == artist) & (
-            chart_with_lyrics['title'] == song), 'lyrics'] = lyrics
+            chart_with_lyrics['title'] == title), 'lyrics'] = lyrics
+
+        chart_with_lyrics.loc[(chart_with_lyrics['artist'] == artist) & (
+            chart_with_lyrics['title'] == title), 'matched_artist'] = matched_artist
+
+        chart_with_lyrics.loc[(chart_with_lyrics['artist'] == artist) & (
+            chart_with_lyrics['title'] == title), 'matched_title'] = matched_title
+
+        chart_with_lyrics.loc[(chart_with_lyrics['artist'] == artist) & (
+            chart_with_lyrics['title'] == title), 'timeout'] = timeout
 
         bar.next()
         sleep(cooldown)

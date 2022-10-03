@@ -1,6 +1,7 @@
 import argparse
 from concurrent.futures import ThreadPoolExecutor
 from threading import Lock
+from time import sleep
 
 import pandas as pd
 
@@ -20,8 +21,6 @@ def parse_args():
     parser.add_argument('--start', help='Start date of the range', type=str)
     parser.add_argument('--end', help='End date of the range', type=str)
     parser.add_argument(
-        '--periods', help='Number of periods to generate', type=int)
-    parser.add_argument(
         '--freq', help='Frequency of the date range', type=str)
     parser.add_argument('--output', help='Output file',
                         type=str, default='charts.csv')
@@ -37,19 +36,20 @@ def parse_args():
 
 def validate_args(args):
     # exactly three of start, end, periods, freq must be specified
-    if sum([args.start is not None, args.end is not None, args.periods is not None, args.freq is not None]) != 3:
-        raise ValueError(
-            'Exactly three of start, end, periods, freq must be specified')
+    if args.start is None:
+        raise ValueError('Start date must be specified')
+    if args.end is None:
+        raise ValueError('End date must be specified')
+    if args.freq is None:
+        raise ValueError('Frequency must be specified')
 
 
 def write_header(output):
     with open(output, 'w') as f:
-        f.write('artist,image,isNew,lastPos,peakPos,rank,title,weeks,date,lyrics\n')
+        f.write('artist,image,isNew,lastPos,peakPos,rank,title,weeks,date,lyrics,matched_title,matched_artist,timeout\n')
 
 
-def get_data(chart, output, start, end, periods, freq, billboard_cooldown, lyrics_cooldown, trim, thread_id=0):
-    charts = get_chart_in_range(
-        chart, start, end, periods, freq, billboard_cooldown, trim)
+def get_data(charts, output, lyrics_cooldown, thread_id=0):
 
     print(f'Got {len(charts)} songs')
 
@@ -63,21 +63,24 @@ def get_data(chart, output, start, end, periods, freq, billboard_cooldown, lyric
             output, index=False, mode='a', header=False)
 
 
-def set_up_scraping_threads(chart, output, start, end, periods, freq, billboard_cooldown, lyrics_cooldown, trim, thread_count):
+def set_up_scraping_threads(chart, output, start, end, freq, billboard_cooldown, lyrics_cooldown, trim, thread_count):
     with ThreadPoolExecutor(max_workers=thread_count) as executor:
         thread_dates = pd.date_range(start, end, periods=thread_count+1)
-
-        print(thread_dates)
 
         for i in range(thread_count):
             start_date = thread_dates[i].strftime('%Y-%m-%d')
             end_date = thread_dates[i+1].strftime('%Y-%m-%d')
 
-            print(
-                f'Starting thread {i+1} with start date {start_date} and end date {end_date}')
+            # get chart data sequentially
+            charts = get_chart_in_range(
+                chart, start_date, end_date, freq, billboard_cooldown, trim)
 
-            executor.submit(get_data, chart, output, start_date, end_date,
-                            periods, freq, billboard_cooldown, lyrics_cooldown, trim, i)
+            print(
+                f'Starting thread {i} with start date {start_date} and end date {end_date}')
+
+            executor.submit(get_data, charts, output, lyrics_cooldown, i)
+
+            sleep(billboard_cooldown)
 
 
 if __name__ == '__main__':
@@ -88,8 +91,8 @@ if __name__ == '__main__':
 
     write_header(args.output)
 
-    # set_up_scraping_threads(args.chart, args.output, args.start, args.end, args.periods,
-    # args.freq, args.billboard_cooldown, args.lyrics_cooldown, args.trim, args.thread_count)
+    set_up_scraping_threads(args.chart, args.output, args.start, args.end,
+                            args.freq, args.billboard_cooldown, args.lyrics_cooldown, args.trim, args.thread_count)
 
-    get_data(args.chart, args.output, args.start, args.end, args.periods,
-             args.freq, args.billboard_cooldown, args.lyrics_cooldown, args.trim)
+    # get_data(args.chart, args.output, args.start, args.end, args.periods,
+    #  args.freq, args.billboard_cooldown, args.lyrics_cooldown, args.trim)

@@ -9,12 +9,18 @@ DATE_FORMAT = '%Y-%m-%d'
 TIMEOUT = 20
 
 
+def normalize_artist(artist: str):
+    return artist.split("Featuring")[0].strip()
+
+
 def normalize_chart_entry(chart_entry: dict):
     normalized_entry = {}
 
     for key in chart_entry.keys():
         if type(chart_entry[key]) == str:
             normalized_entry[key] = normalize_string(chart_entry[key])
+        if key == 'artist':
+            normalized_entry[key] = normalize_artist(chart_entry[key])
         else:
             normalized_entry[key] = chart_entry[key]
 
@@ -43,12 +49,12 @@ def get_chart(chart, date):
     return norm_data
 
 
-def get_chart_in_range(chart: str, start_date: str, end_date: str, periods: int, freq: str, cooldown: float, trim: int):
+def get_chart_in_range(chart: str, start_date: str, end_date: str, freq: str, cooldown: float, trim: int):
     start_date = datetime.strptime(start_date, DATE_FORMAT)
     end_date = datetime.strptime(end_date, DATE_FORMAT)
 
     date_range = pd.date_range(
-        start_date, end_date, periods=periods, freq=freq, inclusive="left")
+        start_date, end_date, freq=freq, inclusive="left")
 
     charts = pd.DataFrame()
 
