@@ -23,7 +23,7 @@ def parse_args():
     parser.add_argument(
         '--freq', help='Frequency of the date range', type=str)
     parser.add_argument('--output', help='Output file',
-                        type=str, default='charts.csv')
+                        type=str, default='data_examples/charts.csv')
     parser.add_argument(
         '--billboard_cooldown', help='Cooldown between Billboard API calls', type=float, default=1)
     parser.add_argument(
