@@ -8,6 +8,7 @@ name = "pypi"
 pandas = "*"
 azapi = "*"
 lyricsgenius = "*"
+progress = "*"
 
 [dev-packages]
 

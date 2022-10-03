@@ -1,7 +1,13 @@
 import argparse
+from concurrent.futures import ThreadPoolExecutor
+from threading import Lock
+
+import pandas as pd
 
 from .lyrics_getter.lyrics_getter import get_lyrics_for_charts
 from .charts_getter.charts_getter import get_chart_in_range
+
+csv_lock = Lock()
 
 
 def parse_args():
@@ -23,6 +29,8 @@ def parse_args():
         '--billboard_cooldown', help='Cooldown between Billboard API calls', type=float, default=1)
     parser.add_argument(
         '--lyrics_cooldown', help='Cooldown between Lyrics API calls', type=float, default=0)
+    parser.add_argument(
+        '--thread_count', help='Number of threads to use', type=int, default=10)
 
     return parser.parse_args()
 
@@ -34,15 +42,54 @@ def validate_args(args):
             'Exactly three of start, end, periods, freq must be specified')
 
 
+def write_header(output):
+    with open(output, 'w') as f:
+        f.write('artist,image,isNew,lastPos,peakPos,rank,title,weeks,date,lyrics\n')
+
+
+def get_data(chart, output, start, end, periods, freq, billboard_cooldown, lyrics_cooldown, trim, thread_id=0):
+    charts = get_chart_in_range(
+        chart, start, end, periods, freq, billboard_cooldown, trim)
+
+    print(f'Got {len(charts)} songs')
+
+    charts_with_lyrics = get_lyrics_for_charts(
+        charts, lyrics_cooldown, thread_id)
+
+    with csv_lock:
+        print(
+            f'Writing {len(charts_with_lyrics)} songs to {output} from thread {thread_id}')
+        charts_with_lyrics.to_csv(
+            output, index=False, mode='a', header=False)
+
+
+def set_up_scraping_threads(chart, output, start, end, periods, freq, billboard_cooldown, lyrics_cooldown, trim, thread_count):
+    with ThreadPoolExecutor(max_workers=thread_count) as executor:
+        thread_dates = pd.date_range(start, end, periods=thread_count+1)
+
+        print(thread_dates)
+
+        for i in range(thread_count):
+            start_date = thread_dates[i].strftime('%Y-%m-%d')
+            end_date = thread_dates[i+1].strftime('%Y-%m-%d')
+
+            print(
+                f'Starting thread {i+1} with start date {start_date} and end date {end_date}')
+
+            executor.submit(get_data, chart, output, start_date, end_date,
+                            periods, freq, billboard_cooldown, lyrics_cooldown, trim, i)
+
+
 if __name__ == '__main__':
     args = parse_args()
     print(args)
 
     validate_args(args)
 
-    charts = get_chart_in_range(
-        args.chart, args.start, args.end, args.periods, args.freq, args.billboard_cooldown)
+    write_header(args.output)
 
-    charts_with_lyrics = get_lyrics_for_charts(charts, args.lyrics_cooldown)
+    # set_up_scraping_threads(args.chart, args.output, args.start, args.end, args.periods,
+    # args.freq, args.billboard_cooldown, args.lyrics_cooldown, args.trim, args.thread_count)
 
-    charts_with_lyrics.to_csv(args.output, index=False)
+    get_data(args.chart, args.output, args.start, args.end, args.periods,
+             args.freq, args.billboard_cooldown, args.lyrics_cooldown, args.trim)
