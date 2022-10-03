@@ -3,10 +3,11 @@ from time import sleep
 import billboard
 from datetime import datetime
 import pandas as pd
-from ..utils import normalize_string
+from ..utils import camel_to_snake, normalize_string
 
 DATE_FORMAT = '%Y-%m-%d'
 TIMEOUT = 20
+ENTRY_COLUMNS = ['rank', 'title', 'artist', 'weeks', 'isNew']
 
 
 def normalize_artist(artist: str):
@@ -16,13 +17,15 @@ def normalize_artist(artist: str):
 def normalize_chart_entry(chart_entry: dict):
     normalized_entry = {}
 
-    for key in chart_entry.keys():
+    for key in ENTRY_COLUMNS:
+        new_key = camel_to_snake(key)
         if type(chart_entry[key]) == str:
-            normalized_entry[key] = normalize_string(chart_entry[key])
+            normalized_entry[camel_to_snake(
+                new_key)] = normalize_string(chart_entry[key])
         if key == 'artist':
-            normalized_entry[key] = normalize_artist(chart_entry[key])
+            normalized_entry[new_key] = normalize_artist(chart_entry[key])
         else:
-            normalized_entry[key] = chart_entry[key]
+            normalized_entry[new_key] = chart_entry[key]
 
     return normalized_entry
 
