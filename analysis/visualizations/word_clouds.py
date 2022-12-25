@@ -6,6 +6,7 @@ from wordcloud import WordCloud, STOPWORDS
 import string
 import nltk
 nltk.download('punkt')
+nltk.download('stopwords')
 
 stopwords = set(map(lambda s: s.translate(
     s.maketrans('', '', string.punctuation)), STOPWORDS))
@@ -32,8 +33,8 @@ def tokenize_and_normalize(str):
     str = str.lower()
     str = str.translate(str.maketrans('', '', string.punctuation))
     tokens = nltk.word_tokenize(str)
-
-    return [token for token in tokens if token.isalpha()]
+    nltk_stopwords = set(nltk.corpus.stopwords.words('english'))
+    return [token for token in tokens if token.isalpha() and token not in nltk_stopwords]
 
 
 def plot_holidays_word_cloud_lyrics(df):
